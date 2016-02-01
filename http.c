@@ -112,12 +112,119 @@ struct evbuffer* httpGetOutbuf(connection* conn) {
 	return ahttp->response.outbuf;
 }
 
+/**
+* get request header
+*
+* @param name name of header.
+*
+* @return value of string if found, otherwise NULL.
+*/
+const char* httpGetRequestHeader(connection* conn, const char* name) {
 
+	http* ahttp = (http*) connectionGetExtra(conn);
 
+	return ahttp->request.headers->getstr(ahttp->request.headers, name, false);
+}
 
+/**
+* return the size of content from the request
+*/
+off_t httpGetContentLength(connection* conn) {
 
+	http* ahttp = (http*) connectionGetExtra(conn);
 
+	return ahttp->request.contentlength;
+}
 
+/**
+* remove content from the in-buffer.
+*
+* @param maxsize maximum length of data to pull up. 0 to pull up everything.
+*/
+void* httpGetContent(connection* conn, size_t maxsize, size_t* storedsize) {
+
+	http* ahttp = (http*) connectionGetExtra(conn);
+
+	size_t inbuflen	= evbuffer_get_length(ahttp->request.inbuf);
+	size_t readlen	= (maxsize == 0) ? inbuflen : ((inbuflen < maxsize) ? inbuflen : maxsize);
+
+	if (readlen == 0) return NULL;
+
+	void* data = malloc(readlen);
+
+	if (data == NULL) return NULL;
+
+	size_t removedlen = evbuffer_remove(ahttp->request.inbuf, data, readlen);
+
+	if (storedsize) *storedsize = removedlen;
+
+	return data;
+}
+
+/**
+* Return whether the request is keep-alive request or not.
+*
+* @return 1 if keep-alive request, otherwise 0.
+*/
+int httpIsKeepaliveRequest(connection* conn) {
+
+	http* ahttp = (http*) connectionGetExtra(conn);
+
+	if (ahttp->request.httpver == NULL) {
+		return 0;
+	}
+
+	const char* aconnection = httpGetRequestHeader(conn, "Connection");
+
+	if (!strcmp(ahttp->request.httpver, HTTP_PROTOCOL_11)) {
+
+		// In HTTP/1.1, Keep-Alive is on by default unless explicitly specified.
+		if (aconnection != NULL && !strcmp(aconnection, "close")) {
+			return 0;
+		}
+
+		return 1;
+
+	} else {
+
+		// In older version, Keep-Alive is off by default unless requested.
+		if (aconnection != NULL && (!strcmp(aconnection, "Keep-Alive") || !strcmp(aconnection, "TE"))) {
+
+			return 1;
+		}
+
+		return 0;
+	}
+}
+
+/**
+* Set response header.
+*
+* @param name name of header.
+* @param value value string to set. NULL to remove the header.
+*
+* @return 0 on success, -1 if we already sent it out.
+*/
+int httpSetResponseHeader(connection* conn, const char* name, const char* value) {
+
+	http* ahttp = (http*) connectionGetExtra(conn);
+
+	if (ahttp->response.frozen_header) {
+		return -1;
+	}
+
+	if (value != NULL) {
+
+		ahttp->response.headers->putstr(ahttp->response.headers, name, value);
+
+	} else {
+
+		ahttp->response.headers->remove(ahttp->response.headers, name);
+
+	}
+
+	return 0;
+}
 
 
 
