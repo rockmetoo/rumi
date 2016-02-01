@@ -27,51 +27,51 @@ typedef struct listable_data_t	listableData;
 
 struct listable_s {
     // capsulated member functions
-    bool (*put)			(listable_s* tbl, const char* name, const void *data, size_t size);
-    bool (*putstr)		(listable_s* tbl, const char* name, const char *str);
-    bool (*putstrf) 	(listable_s* tbl, const char* name, const char *format, ...);
-    bool (*putint)		(listable_s* tbl, const char* name, int64_t num);
+    bool (*put)			(listtable* tbl, const char* name, const void *data, size_t size);
+    bool (*putstr)		(listtable* tbl, const char* name, const char *str);
+    bool (*putstrf) 	(listtable* tbl, const char* name, const char *format, ...);
+    bool (*putint)		(listtable* tbl, const char* name, int64_t num);
 
-    void *(*get)		(listable_s* tbl, const char* name, size_t *size, bool newmem);
-    char *(*getstr) 	(listable_s* tbl, const char* name, bool newmem);
-    int64_t (*getint)	(listable_s* tbl, const char* name);
+    void *(*get)		(listtable* tbl, const char* name, size_t *size, bool newmem);
+    char *(*getstr) 	(listtable* tbl, const char* name, bool newmem);
+    int64_t (*getint)	(listtable* tbl, const char* name);
 
-    listable_data_t *(*getmulti) (listable_s* tbl, const char* name, bool newmem, size_t *numobjs);
-    void (*freemulti)	(listable_data_t *objs);
+    listableData *(*getmulti) (listtable* tbl, const char* name, bool newmem, size_t *numobjs);
+    void (*freemulti)	(listableData *objs);
 
-    size_t (*remove)	(listable_s* tbl, const char* name);
-    bool (*removeobj)	(listable_s* tbl, const listable_obj_t *obj);
+    size_t (*remove)	(listtable* tbl, const char* name);
+    bool (*removeobj)	(listtable* tbl, const listableObj *obj);
 
-    bool (*getnext)		(listable_s* tbl, listable_obj_t *obj, const char* name, bool newmem);
+    bool (*getnext)		(listtable* tbl, listableObj *obj, const char* name, bool newmem);
 
-    size_t (*size)		(listable_s* tbl);
-    void (*sort)		(listable_s* tbl);
-    void (*clear)		(listable_s* tbl);
+    size_t (*size)		(listtable* tbl);
+    void (*sort)		(listtable* tbl);
+    void (*clear)		(listtable* tbl);
 
-    bool (*save)		(listable_s* tbl, const char *filepath, char sepchar, bool encode);
-    ssize_t (*load)		(listable_s* tbl, const char *filepath, char sepchar, bool decode);
-    bool (*debug)		(listable_s* tbl, FILE *out);
+    bool (*save)		(listtable* tbl, const char *filepath, char sepchar, bool encode);
+    ssize_t (*load)		(listtable* tbl, const char *filepath, char sepchar, bool decode);
+    bool (*debug)		(listtable* tbl, FILE *out);
 
-    void (*lock)		(listable_s* tbl);
-    void (*unlock)		(listable_s* tbl);
+    void (*lock)		(listtable* tbl);
+    void (*unlock)		(listtable* tbl);
 
-    void (*free)		(listable_s* tbl);
+    void (*free)		(listtable* tbl);
 
     // private methods
-    bool (*namematch)	(listable_obj_t *obj, const char* name, uint32_t hash);
-    int (*namecmp)		(const char *s1, const char *s2);
+    bool (*namematch)	(listableObj* obj, const char* name, uint32_t hash);
+    int (*namecmp)		(const char* s1, const char* s2);
 
     // private variables - do not access directly
-    bool unique;           // keys are unique
-    bool caseinsensitive;  // case insensitive key comparison
-    bool keepsorted;       // keep table in sorted (default: insertion order)
-    bool inserttop;        // add new key at the top. (default: bottom)
-    bool lookupforward;    // find keys from the top. (default: backward)
+    bool			unique;				// keys are unique
+    bool			caseinsensitive;	// case insensitive key comparison
+    bool			keepsorted;			// keep table in sorted (default: insertion order)
+    bool			inserttop;			// add new key at the top. (default: bottom)
+    bool			lookupforward;		// find keys from the top. (default: backward)
 
-    void* qmutex;          // initialized when listableOPT_THREADSAFE is given
-    size_t num;            // number of elements
-    listable_obj_t* first; // first object pointer
-    listable_obj_t* last;  // last object pointer
+    void*			qmutex;				// initialized when listableOPT_THREADSAFE is given
+    size_t			num;				// number of elements
+    listableObj*	first; 				// first object pointer
+    listableObj*	last;				// last object pointer
 };
 
 struct listable_obj_t {
@@ -80,8 +80,8 @@ struct listable_obj_t {
     void* 			data;	// data
     size_t			size;	// data size
 
-    listable_obj_t* prev;	// previous link
-    listable_obj_t* next;	// next link
+    listableObj*	prev;	// previous link
+    listableObj*	next;	// next link
 };
 
 struct listtable_data_t {
@@ -92,37 +92,37 @@ struct listtable_data_t {
 
 // public functions
 
-extern listable_s*	listtable(int options);
+extern listtable*	listTable(int options);
 
-extern bool			listablePut(listable_s* tbl, const char* name, const void* data, size_t size);
-extern bool			listablePutAsString(listable_s* tbl, const char* name, const char* str);
-extern bool			listablePutAsStringf(listable_s* tbl, const char* name, const char* format, ...);
-extern bool			listablePutAsInt(listable_s* tbl, const char* name, int64_t num);
+extern bool			listablePut(listtable* tbl, const char* name, const void* data, size_t size);
+extern bool			listablePutAsString(listtable* tbl, const char* name, const char* str);
+extern bool			listablePutAsStringf(listtable* tbl, const char* name, const char* format, ...);
+extern bool			listablePutAsInt(listtable* tbl, const char* name, int64_t num);
 
-extern void*		listableGet(listable_s* tbl, const char* name, size_t* size, bool newmem);
-extern char*		listableGetAsString(listable_s* tbl, const char* name, bool newmem);
-extern int64_t		listableGetAsInt(listable_s* tbl, const char* name);
+extern void*		listableGet(listtable* tbl, const char* name, size_t* size, bool newmem);
+extern char*		listableGetAsString(listtable* tbl, const char* name, bool newmem);
+extern int64_t		listableGetAsInt(listtable* tbl, const char* name);
 
-extern listable_data_t* listableGetMulti(listable_s* tbl, const char* name, bool newmem, size_t* numobjs);
-extern void			listableFreeMulti(listable_data_t* objs);
+extern listableData* listableGetMulti(listtable* tbl, const char* name, bool newmem, size_t* numobjs);
+extern void			listableFreeMulti(listableData* objs);
 
-extern size_t		listableRemove(listable_s* tbl, const char* name);
-extern bool			listableRemoveObj(listable_s* tbl, const listable_obj_t* obj);
+extern size_t		listableRemove(listtable* tbl, const char* name);
+extern bool			listableRemoveObj(listtable* tbl, const listableObj* obj);
 
-extern bool			listableGetNext(listable_s* tbl, listable_obj_t* obj, const char* name, bool newmem);
+extern bool			listableGetNext(listtable* tbl, listableObj* obj, const char* name, bool newmem);
 
-extern size_t		listableSize(listable_s* tbl);
-extern void			listableSort(listable_s* tbl);
-extern void			listableClear(listable_s* tbl);
-extern bool			listableSave(listable_s* tbl, const char* filepath, char sepchar, bool encode);
-extern ssize_t		listableLoad(listable_s* tbl, const char* filepath, char sepchar, bool decode);
+extern size_t		listableSize(listtable* tbl);
+extern void			listableSort(listtable* tbl);
+extern void			listableClear(listtable* tbl);
+extern bool			listableSave(listtable* tbl, const char* filepath, char sepchar, bool encode);
+extern ssize_t		listableLoad(listtable* tbl, const char* filepath, char sepchar, bool decode);
 
-extern bool			listableDebug(listable_s* tbl, FILE *out);
+extern bool			listableDebug(listtable* tbl, FILE *out);
 
-extern void			listableLock(listable_s* tbl);
-extern void			listableUnlock(listable_s* tbl);
+extern void			listableLock(listtable* tbl);
+extern void			listableUnlock(listtable* tbl);
 
-extern void			listableFree(listable_s* tbl);
+extern void			listableFree(listtable* tbl);
 
 #ifdef __cplusplus
 }

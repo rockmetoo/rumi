@@ -9,6 +9,7 @@
 #include "common.h"
 #include "hashtable.h"
 #include "list.h"
+#include "listtable.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -77,7 +78,7 @@ struct http_t {
 		char* path;							// decoded path ex) /data path
 		char* query;						// query string ex) query=the%20value
 		// request header - available on REQ_HEADER_DONE.
-		list* headers;						// parsed request header entries
+		listtable* headers;					// parsed request header entries
 		char* host;							// host ex) www.domain.com or www.domain.com:8080
 		char* domain;						// domain name ex) www.domain.com (no port number)
 		off_t contentlength;				// value of Content-Length header.*/
@@ -91,7 +92,7 @@ struct http_t {
 		// response headers
 		int code;							// response status-code
 		char* reason;						// reason-phrase
-		list* headers;						// response header entries
+		listtable* headers;					// response header entries
 		off_t contentlength;				// content length in response
 		size_t bodyout;						// bytes added to out-buffer
 	} response;
