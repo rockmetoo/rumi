@@ -226,10 +226,283 @@ int httpSetResponseHeader(connection* conn, const char* name, const char* value)
 	return 0;
 }
 
+/**
+* Get response header.
+*
+* @param name name of header.
+*
+* @return value of string if found, otherwise NULL.
+*/
+const char* httpGetResponseHeader(connection* conn, const char* name) {
 
+	http* ahttp = (http*) connectionGetExtra(conn);
 
+	return ahttp->response.headers->getstr(ahttp->response.headers, name, false);
+}
 
+/**
+*
+* @return 0 on success, -1 if we already sent it out.
+*/
+int httpSetResponseCode(connection* conn, int code, const char* reason) {
 
+	http* ahttp = (http*) connectionGetExtra(conn);
+
+	if (ahttp->response.frozen_header) {
+		return -1;
+	}
+
+	ahttp->response.code = code;
+
+	if (reason) ahttp->response.reason = strdup(reason);
+
+	return 0;
+}
+
+/**
+*
+* @param size content size. -1 for chunked transfer encoding.
+* @return 0 on success, -1 if we already sent it out.
+*/
+int httpSetResponseContent(connection* conn, const char* contenttype, off_t size) {
+
+	http* ahttp = (http*) connectionGetExtra(conn);
+
+	if (ahttp->response.frozen_header) {
+		return -1;
+	}
+
+	// Set Content-Type header.
+	httpSetResponseHeader(conn, "Content-Type", (contenttype) ? contenttype : HTTP_DEF_CONTENT_TYPE);
+
+	if (size >= 0) {
+
+		char clenval[20 + 1];
+		sprintf(clenval, "%jd", size);
+		httpSetResponseHeader(conn, "Content-Length", clenval);
+
+		ahttp->response.contentlength = size;
+
+	} else {
+
+		httpSetResponseHeader(conn, "Transfer-Encoding", "chunked");
+		ahttp->response.contentlength = -1;
+	}
+
+	return 0;
+}
+
+/**
+* @return total bytes sent, 0 on error.
+*/
+size_t httpResponse(connection* conn, int code, const char* contenttype, const void* data, off_t size) {
+
+	http* ahttp = (http*) connectionGetExtra(conn);
+
+	if (ahttp->response.frozen_header) {
+		return 0;
+	}
+
+	// Set response headers.
+	if (httpGetResponseHeader(conn, "Connection") == NULL) {
+
+		httpSetResponseHeader(conn, "Connection", (httpIsKeepaliveRequest(conn)) ? "Keep-Alive" : "close");
+	}
+
+	httpSetResponseCode(conn, code, httpGetReason(code));
+
+	httpSetResponseContent(conn, contenttype, size);
+
+	return httpSendData(conn, data, size);
+}
+
+/**
+*
+* @return 0 total bytes put in out buffer, -1 if we already sent it out.
+*/
+size_t httpSendHeader(connection* conn) {
+
+	http* ahttp = (http*) connectionGetExtra(conn);
+
+	if (ahttp->response.frozen_header) {
+		return 0;
+	}
+
+	ahttp->response.frozen_header = true;
+
+	// Send status line.
+	const char* reason = (ahttp->response.reason) ? ahttp->response.reason : httpGetReason(ahttp->response.code);
+
+	evbuffer_add_printf(ahttp->response.outbuf, "%s %d %s" HTTP_CRLF, ahttp->request.httpver, ahttp->response.code, reason);
+
+	// Send headers.
+	listableObj obj;
+
+	bzero((void*) &obj, sizeof(obj));
+
+	listtable* tbl = ahttp->response.headers;
+
+	tbl->lock(tbl);
+
+	while (tbl->getnext(tbl, &obj, NULL, false)) {
+		evbuffer_add_printf(ahttp->response.outbuf, "%s: %s" HTTP_CRLF, (char*) obj.name, (char*) obj.data);
+	}
+
+	tbl->unlock(tbl);
+
+	// Send empty line, indicator of end of header.
+	evbuffer_add(ahttp->response.outbuf, HTTP_CRLF, STRLEN(HTTP_CRLF));
+	return evbuffer_get_length(ahttp->response.outbuf);
+}
+
+/**
+*
+* @return 0 on success, -1 if we already sent it out.
+*/
+size_t httpSendData(connection* conn, const void* data, size_t size) {
+
+	http* ahttp = (http*) connectionGetExtra(conn);
+
+	if (ahttp->response.contentlength < 0) {
+
+		WARN("Content-Length is not set. Invalid usage.");
+		return 0;
+	}
+
+	if ((ahttp->response.bodyout + size) > ahttp->response.contentlength) {
+		WARN("Trying to send more data than supposed to");
+		return 0;
+	}
+
+	size_t beforesize = evbuffer_get_length(ahttp->response.outbuf);
+
+	if (!ahttp->response.frozen_header) {
+
+		httpSendHeader(conn);
+	}
+
+	if (data != NULL && size > 0) {
+		if (evbuffer_add(ahttp->response.outbuf, data, size)) return 0;
+	}
+
+	ahttp->response.bodyout += size;
+
+	return (evbuffer_get_length(ahttp->response.outbuf) - beforesize);
+}
+
+size_t httpSendChunk(connection* conn, const void* data, size_t size) {
+
+	http* ahttp = (http*) connectionGetExtra(conn);
+
+	if (ahttp->response.contentlength >= 0) {
+
+		WARN("Content-Length is set. Invalid usage.");
+		return 0;
+	}
+
+	if (!ahttp->response.frozen_header) {
+		httpSendHeader(conn);
+	}
+
+	size_t beforesize = evbuffer_get_length(ahttp->response.outbuf);
+
+	int status = 0;
+
+	if (size > 0) {
+
+		status += evbuffer_add_printf(ahttp->response.outbuf, "%zu" HTTP_CRLF,
+		size);
+		status += evbuffer_add(ahttp->response.outbuf, data, size);
+		status += evbuffer_add(ahttp->response.outbuf, HTTP_CRLF,
+		CONST_STRLEN(HTTP_CRLF));
+
+	} else {
+
+		status += evbuffer_add_printf(ahttp->response.outbuf, "0" HTTP_CRLF HTTP_CRLF);
+	}
+
+	if (status != 0) {
+
+		WARN("Failed to add data to out-buffer. (size:%jd)", size);
+		return 0;
+	}
+
+	size_t bytesout = evbuffer_get_length(ahttp->response.outbuf) - beforesize;
+	ahttp->response.bodyout += bytesout;
+
+	return bytesout;
+}
+
+const char *ad_http_get_reason(int code) {
+
+	switch (code) {
+		case HTTP_CODE_CONTINUE:
+			return "Continue";
+
+		case HTTP_CODE_OK:
+			return "OK";
+
+		case HTTP_CODE_CREATED:
+			return "Created";
+
+		case HTTP_CODE_NO_CONTENT:
+			return "No content";
+
+		case HTTP_CODE_PARTIAL_CONTENT:
+			return "Partial Content";
+
+		case HTTP_CODE_MULTI_STATUS:
+			return "Multi Status";
+
+		case HTTP_CODE_MOVED_TEMPORARILY:
+			return "Moved Temporarily";
+
+		case HTTP_CODE_NOT_MODIFIED:
+			return "Not Modified";
+
+		case HTTP_CODE_BAD_REQUEST:
+			return "Bad Request";
+
+		case HTTP_CODE_UNAUTHORIZED:
+			return "Authorization Required";
+
+		case HTTP_CODE_FORBIDDEN:
+			return "Forbidden";
+
+		case HTTP_CODE_NOT_FOUND:
+			return "Not Found";
+
+		case HTTP_CODE_METHOD_NOT_ALLOWED:
+			return "Method Not Allowed";
+
+		case HTTP_CODE_REQUEST_TIME_OUT:
+			return "Request Time Out";
+
+		case HTTP_CODE_GONE:
+			return "Gone";
+
+		case HTTP_CODE_REQUEST_URI_TOO_LONG:
+			return "Request URI Too Long";
+
+		case HTTP_CODE_LOCKED:
+			return "Locked";
+
+		case HTTP_CODE_INTERNAL_SERVER_ERROR:
+			return "Internal Server Error";
+
+		case HTTP_CODE_NOT_IMPLEMENTED:
+			return "Not Implemented";
+
+		case HTTP_CODE_SERVICE_UNAVAILABLE:
+			return "Service Unavailable";
+	}
+
+	WARN("Undefined code found. %d", code);
+
+	return "-";
+}
+
+// private functions
 
 static http* httpNew(struct evbuffer* out) {
 

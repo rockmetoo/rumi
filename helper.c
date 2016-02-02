@@ -14,7 +14,7 @@
 
 #include "helper.h"
 
-char* makeword(char *str, char stop) {
+char* makeword(char* str, char stop) {
 
 	char* word;
 	int len, i;

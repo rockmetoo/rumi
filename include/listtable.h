@@ -27,39 +27,39 @@ typedef struct listable_data_t	listableData;
 
 struct listable_s {
     // capsulated member functions
-    bool (*put)			(listtable* tbl, const char* name, const void *data, size_t size);
-    bool (*putstr)		(listtable* tbl, const char* name, const char *str);
-    bool (*putstrf) 	(listtable* tbl, const char* name, const char *format, ...);
-    bool (*putint)		(listtable* tbl, const char* name, int64_t num);
+    bool	(*put)			(listtable* tbl, const char* name, const void *data, size_t size);
+    bool	(*putstr)		(listtable* tbl, const char* name, const char *str);
+    bool	(*putstrf) 		(listtable* tbl, const char* name, const char *format, ...);
+    bool	(*putint)		(listtable* tbl, const char* name, int64_t num);
 
-    void *(*get)		(listtable* tbl, const char* name, size_t *size, bool newmem);
-    char *(*getstr) 	(listtable* tbl, const char* name, bool newmem);
-    int64_t (*getint)	(listtable* tbl, const char* name);
+    void*	(*get)			(listtable* tbl, const char* name, size_t *size, bool newmem);
+    char*	(*getstr) 		(listtable* tbl, const char* name, bool newmem);
+    int64_t	(*getint)		(listtable* tbl, const char* name);
 
     listableData *(*getmulti) (listtable* tbl, const char* name, bool newmem, size_t *numobjs);
-    void (*freemulti)	(listableData *objs);
+    void	(*freemulti)	(listableData *objs);
 
-    size_t (*remove)	(listtable* tbl, const char* name);
-    bool (*removeobj)	(listtable* tbl, const listableObj *obj);
+    size_t	(*remove)		(listtable* tbl, const char* name);
+    bool	(*removeobj)	(listtable* tbl, const listableObj *obj);
 
-    bool (*getnext)		(listtable* tbl, listableObj *obj, const char* name, bool newmem);
+    bool	(*getnext)		(listtable* tbl, listableObj *obj, const char* name, bool newmem);
 
-    size_t (*size)		(listtable* tbl);
-    void (*sort)		(listtable* tbl);
-    void (*clear)		(listtable* tbl);
+    size_t	(*size)			(listtable* tbl);
+    void	(*sort)			(listtable* tbl);
+    void 	(*clear)		(listtable* tbl);
 
-    bool (*save)		(listtable* tbl, const char *filepath, char sepchar, bool encode);
-    ssize_t (*load)		(listtable* tbl, const char *filepath, char sepchar, bool decode);
-    bool (*debug)		(listtable* tbl, FILE *out);
+    bool	(*save)			(listtable* tbl, const char *filepath, char sepchar, bool encode);
+    ssize_t (*load)			(listtable* tbl, const char *filepath, char sepchar, bool decode);
+    bool	(*debug)		(listtable* tbl, FILE *out);
 
-    void (*lock)		(listtable* tbl);
-    void (*unlock)		(listtable* tbl);
+    void	(*lock)			(listtable* tbl);
+    void	(*unlock)		(listtable* tbl);
 
-    void (*free)		(listtable* tbl);
+    void	(*free)			(listtable* tbl);
 
     // private methods
-    bool (*namematch)	(listableObj* obj, const char* name, uint32_t hash);
-    int (*namecmp)		(const char* s1, const char* s2);
+    bool	(*namematch)	(listableObj* obj, const char* name, uint32_t hash);
+    int		(*namecmp)		(const char* s1, const char* s2);
 
     // private variables - do not access directly
     bool			unique;				// keys are unique

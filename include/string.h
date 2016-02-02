@@ -10,7 +10,8 @@
 extern "C" {
 #endif
 
-extern char* makeword(char* str, char stop);
+extern char* strTrim(char* str);
+extern char* strReplace(const char* mode, char* srcstr, const char* tokstr, const char* word);
 
 #ifdef __cplusplus
 }
