@@ -12,7 +12,7 @@
 
 listtable* parseQueries(listtable* tbl, const char* query, char equalchar, char sepchar, int* count) {
 
-	if (tbl == NULL && (tbl = qlisttbl(0)) == NULL) {
+	if (tbl == NULL && (tbl = listTable(0)) == NULL) {
 		return NULL;
 	}
 

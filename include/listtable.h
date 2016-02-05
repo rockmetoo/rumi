@@ -27,30 +27,30 @@ typedef struct listable_data_t	listableData;
 
 struct listable_s {
     // capsulated member functions
-    bool	(*put)			(listtable* tbl, const char* name, const void *data, size_t size);
-    bool	(*putstr)		(listtable* tbl, const char* name, const char *str);
-    bool	(*putstrf) 		(listtable* tbl, const char* name, const char *format, ...);
+    bool	(*put)			(listtable* tbl, const char* name, const void* data, size_t size);
+    bool	(*putstr)		(listtable* tbl, const char* name, const char* str);
+    bool	(*putstrf) 		(listtable* tbl, const char* name, const char* format, ...);
     bool	(*putint)		(listtable* tbl, const char* name, int64_t num);
 
-    void*	(*get)			(listtable* tbl, const char* name, size_t *size, bool newmem);
+    void*	(*get)			(listtable* tbl, const char* name, size_t* size, bool newmem);
     char*	(*getstr) 		(listtable* tbl, const char* name, bool newmem);
     int64_t	(*getint)		(listtable* tbl, const char* name);
 
-    listableData *(*getmulti) (listtable* tbl, const char* name, bool newmem, size_t *numobjs);
-    void	(*freemulti)	(listableData *objs);
+    listableData *(*getmulti) (listtable* tbl, const char* name, bool newmem, size_t* numobjs);
+    void	(*freemulti)	(listableData* objs);
 
     size_t	(*remove)		(listtable* tbl, const char* name);
-    bool	(*removeobj)	(listtable* tbl, const listableObj *obj);
+    bool	(*removeobj)	(listtable* tbl, const listableObj* obj);
 
-    bool	(*getnext)		(listtable* tbl, listableObj *obj, const char* name, bool newmem);
+    bool	(*getnext)		(listtable* tbl, listableObj* obj, const char* name, bool newmem);
 
     size_t	(*size)			(listtable* tbl);
     void	(*sort)			(listtable* tbl);
     void 	(*clear)		(listtable* tbl);
 
-    bool	(*save)			(listtable* tbl, const char *filepath, char sepchar, bool encode);
-    ssize_t (*load)			(listtable* tbl, const char *filepath, char sepchar, bool decode);
-    bool	(*debug)		(listtable* tbl, FILE *out);
+    bool	(*save)			(listtable* tbl, const char* filepath, char sepchar, bool encode);
+    ssize_t (*load)			(listtable* tbl, const char* filepath, char sepchar, bool decode);
+    bool	(*debug)		(listtable* tbl, FILE* out);
 
     void	(*lock)			(listtable* tbl);
     void	(*unlock)		(listtable* tbl);
