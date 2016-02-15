@@ -21,11 +21,11 @@ enum {
     LISTTABLE_LOOKUPFORWARD		= (0x01 << 4), // find key from the top (default: backward)
 };
 
-typedef struct listable_s		listtable;
-typedef struct listable_obj_t	listableObj;
-typedef struct listable_data_t	listableData;
+typedef struct listtable_s		listtable;
+typedef struct listtable_obj_t	listtableObj;
+typedef struct listtable_data_t	listtableData;
 
-struct listable_s {
+struct listtable_s {
     // capsulated member functions
     bool	(*put)			(listtable* tbl, const char* name, const void* data, size_t size);
     bool	(*putstr)		(listtable* tbl, const char* name, const char* str);
@@ -36,13 +36,13 @@ struct listable_s {
     char*	(*getstr) 		(listtable* tbl, const char* name, bool newmem);
     int64_t	(*getint)		(listtable* tbl, const char* name);
 
-    listableData *(*getmulti) (listtable* tbl, const char* name, bool newmem, size_t* numobjs);
-    void	(*freemulti)	(listableData* objs);
+    listtableData *(*getmulti) (listtable* tbl, const char* name, bool newmem, size_t* numobjs);
+    void	(*freemulti)	(listtableData* objs);
 
     size_t	(*remove)		(listtable* tbl, const char* name);
-    bool	(*removeobj)	(listtable* tbl, const listableObj* obj);
+    bool	(*removeobj)	(listtable* tbl, const listtableObj* obj);
 
-    bool	(*getnext)		(listtable* tbl, listableObj* obj, const char* name, bool newmem);
+    bool	(*getnext)		(listtable* tbl, listtableObj* obj, const char* name, bool newmem);
 
     size_t	(*size)			(listtable* tbl);
     void	(*sort)			(listtable* tbl);
@@ -58,7 +58,7 @@ struct listable_s {
     void	(*free)			(listtable* tbl);
 
     // private methods
-    bool	(*namematch)	(listableObj* obj, const char* name, uint32_t hash);
+    bool	(*namematch)	(listtableObj* obj, const char* name, uint32_t hash);
     int		(*namecmp)		(const char* s1, const char* s2);
 
     // private variables - do not access directly
@@ -70,18 +70,18 @@ struct listable_s {
 
     void*			qmutex;				// initialized when listableOPT_THREADSAFE is given
     size_t			num;				// number of elements
-    listableObj*	first; 				// first object pointer
-    listableObj*	last;				// last object pointer
+    listtableObj*	first; 				// first object pointer
+    listtableObj*	last;				// last object pointer
 };
 
-struct listable_obj_t {
+struct listtable_obj_t {
     uint32_t		hash;	// 32bit-hash value of object name
     char*			name;	// object name
     void* 			data;	// data
     size_t			size;	// data size
 
-    listableObj*	prev;	// previous link
-    listableObj*	next;	// next link
+    listtableObj*	prev;	// previous link
+    listtableObj*	next;	// next link
 };
 
 struct listtable_data_t {
@@ -103,13 +103,13 @@ extern void*		listableGet(listtable* tbl, const char* name, size_t* size, bool n
 extern char*		listableGetAsString(listtable* tbl, const char* name, bool newmem);
 extern int64_t		listableGetAsInt(listtable* tbl, const char* name);
 
-extern listableData* listableGetMulti(listtable* tbl, const char* name, bool newmem, size_t* numobjs);
-extern void			listableFreeMulti(listableData* objs);
+extern listtableData* listableGetMulti(listtable* tbl, const char* name, bool newmem, size_t* numobjs);
+extern void			listableFreeMulti(listtableData* objs);
 
 extern size_t		listableRemove(listtable* tbl, const char* name);
-extern bool			listableRemoveObj(listtable* tbl, const listableObj* obj);
+extern bool			listableRemoveObj(listtable* tbl, const listtableObj* obj);
 
-extern bool			listableGetNext(listtable* tbl, listableObj* obj, const char* name, bool newmem);
+extern bool			listableGetNext(listtable* tbl, listtableObj* obj, const char* name, bool newmem);
 
 extern size_t		listableSize(listtable* tbl);
 extern void			listableSort(listtable* tbl);
